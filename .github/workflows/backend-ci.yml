@@ -22,7 +22,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: cd backend && npm install
+        run: cd be-koptel-keuangan && npm install
 
       - name: Run Tests
-        run: cd backend && npm test --if-present
+        run: cd be-koptel-keuangan && npm test --if-present
