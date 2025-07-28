@@ -1,7 +1,5 @@
 ## Architectural Design
 
-Berikut diagram arsitektur aplikasi:
-
 ```mermaid
 graph TD
     subgraph User_Interface_Frontend
@@ -35,3 +33,7 @@ graph TD
     C4 -->|Call| E1
     E1 -->|Response| C4
 ```
+
+## Arsitketural db
+
+<img width="809" height="650" alt="Screenshot 2025-07-28 at 15 38 40" src="https://github.com/user-attachments/assets/740e5efa-f87e-4607-924a-aa1d3f644cb5" />
