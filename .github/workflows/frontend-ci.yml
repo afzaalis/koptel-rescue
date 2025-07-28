@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'frontend-web/**'
   workflow_dispatch:
 
 jobs:
