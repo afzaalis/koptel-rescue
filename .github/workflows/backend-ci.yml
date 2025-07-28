@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'backend/**'
+      - 'be-koptel-keuangan/**'
 
 jobs:
   build:
