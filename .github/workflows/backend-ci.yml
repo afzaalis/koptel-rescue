@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
+          cache-dependency-path: be-koptel-keuangan/package-lock.json
+
 
       - name: Install Dependencies
         run: cd be-koptel-keuangan && npm install
