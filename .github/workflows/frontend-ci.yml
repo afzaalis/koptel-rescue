@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - 'frontend/**'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -18,12 +20,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'npm' 
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json 
 
       - name: Install Dependencies
         run: cd frontend && npm install
 
-      - name: Run Tests
+      - name: Run Tests (if available)
         run: cd frontend && npm test --if-present
 
       - name: Build Project
