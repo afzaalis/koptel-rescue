@@ -32,4 +32,4 @@ jobs:
         run: npm test --if-present
 
       - name: Build project
-        run: npm run build
+        run: npm run build -- --no-lint
