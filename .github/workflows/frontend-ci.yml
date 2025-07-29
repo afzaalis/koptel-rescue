@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: frontend-web  
+        working-directory: fe-koptel-keuangan/typescript-version/
 
     steps:
       - name: Checkout repository
@@ -23,8 +23,8 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
-          cache-dependency-path: frontend-web/package-lock.json
-
+          cache-dependency-path: fe-koptel-keuangan/typescript-version/package-lock.json
+          
       - name: Install dependencies
         run: npm install
 
