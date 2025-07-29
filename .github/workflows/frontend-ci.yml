@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: fe-koptel-keuangan/typescript-version/
+        working-directory: fe-koptel-keuangan/typescript-version
 
     steps:
       - name: Checkout repository
