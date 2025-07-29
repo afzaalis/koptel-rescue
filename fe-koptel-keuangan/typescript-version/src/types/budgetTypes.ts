@@ -11,7 +11,7 @@ export interface BudgetCode {
 
 // Definisi untuk Kontribusi Produk
 export interface ProductContribution {
-  id?: string; // ID opsional untuk kasus pembuatan baru
+  id?: string; 
   budget_code_id: string;
   product_name: string;
   month: number;
@@ -21,7 +21,7 @@ export interface ProductContribution {
 
 // Definisi untuk Target Anggaran Bulanan
 export interface BudgetTarget {
-  id?: string; // ID opsional untuk kasus pembuatan baru
+  id?: string; 
   budget_code_id: string;
   month: number;
   year: number;
@@ -30,13 +30,13 @@ export interface BudgetTarget {
 
 // Definisi untuk Data Realisasi/Pengeluaran (menggunakan tabel sales)
 export interface RealizationData {
-  id?: string; // ID opsional untuk kasus pembuatan baru
+  id?: string; 
   tanggal: string;
   nominal: number;
   jenis_data: 'Realisasi' | 'Expenses';
-  produk?: string; // Relevan untuk Realisasi
-  nama_pemasukan?: string; // Relevan untuk Expenses
+  produk?: string; 
+  nama_pemasukan?: string; 
   catatan?: string;
   nama_penginput?: string;
-  budget_code_id?: string; // Opsional, jika tabel sales dimodifikasi
+  budget_code_id?: string; 
 }
