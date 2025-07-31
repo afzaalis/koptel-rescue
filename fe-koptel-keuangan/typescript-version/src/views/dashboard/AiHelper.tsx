@@ -11,8 +11,8 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import CircularProgress from '@mui/material/CircularProgress';
 import SendIcon from 'mdi-material-ui/Send';
-import RobotOutline from 'mdi-material-ui/RobotOutline'; // Icon untuk AI
-import AccountCircleOutline from 'mdi-material-ui/AccountCircleOutline'; // Icon untuk User
+import RobotOutline from 'mdi-material-ui/RobotOutline'; 
+import AccountCircleOutline from 'mdi-material-ui/AccountCircleOutline'; 
 import { styled, useTheme } from '@mui/material/styles';
 
 // ** Axios for API calls
@@ -23,7 +23,7 @@ import authConfig from 'src/configs/auth';
 
 // Styled components
 const ChatContainer = styled(Paper)(({ theme }) => ({
-  height: 'calc(100vh - 200px)', // Adjust height as needed
+  height: 'calc(100vh - 200px)', 
   display: 'flex',
   flexDirection: 'column',
   borderRadius: theme.shape.borderRadius,

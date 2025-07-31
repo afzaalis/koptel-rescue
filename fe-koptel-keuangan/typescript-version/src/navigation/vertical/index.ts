@@ -76,6 +76,13 @@ const navigation = (): VerticalNavItemsType => {
       path: '/masterdata',
       // openInNewTab: true
     },
+    {
+      title: 'Input News & Events',
+      icon: FileDocumentOutline,
+      path: '/carousel',
+      // openInNewTab: true
+    },
+
     // {
     //   title: 'Register',
     //   icon: AccountPlusOutline,

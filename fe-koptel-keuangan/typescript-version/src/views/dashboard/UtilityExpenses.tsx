@@ -12,8 +12,8 @@ import CardContent from '@mui/material/CardContent';
 import { styled, useTheme } from '@mui/material/styles';
 
 // ** Icons Imports
-import CashMinus from 'mdi-material-ui/CashMinus'; // Icon untuk Expenses
-import CalendarMonth from 'mdi-material-ui/CalendarMonth'; // Icon untuk Expenses Bulan Ini
+import CashMinus from 'mdi-material-ui/CashMinus'; 
+import CalendarMonth from 'mdi-material-ui/CalendarMonth'; 
 
 // ** Chart Imports - Dynamically import ReactApexChart
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -40,7 +40,7 @@ interface ExpensesSummary {
   expensesCM: number;
 }
 
-// Perubahan di sini: Interface untuk data bulanan sekarang mencakup tahun ini dan tahun sebelumnya
+// Interface untuk data bulanan sekarang mencakup tahun ini dan tahun sebelumnya
 interface MonthlyExpensesComparisonData {
   month: string;
   currentYearExpenses: number;
@@ -57,7 +57,7 @@ const UtilityExpensesDashboard = () => {
 
   // ** State untuk data
   const [summary, setSummary] = useState<ExpensesSummary | null>(null);
-  // Perubahan di sini: Menggunakan tipe baru untuk data grafik bulanan
+  //  Menggunakan tipe baru untuk data grafik bulanan
   const [monthlyExpensesChartData, setMonthlyExpensesChartData] = useState<MonthlyExpensesComparisonData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +155,7 @@ const UtilityExpensesDashboard = () => {
         formatter: (val) => `IDR ${val.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       }
     },
-    colors: [theme.palette.primary.main, theme.palette.secondary.main], // Warna untuk tahun ini dan tahun sebelumnya
+    colors: [theme.palette.primary.main, theme.palette.secondary.main], 
     grid: {
       borderColor: theme.palette.divider,
       xaxis: {
