@@ -10,7 +10,13 @@ export default function CreateNews() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await axios.post(`${BASE_URL}/news`, { title, content });
+    await axios.post(`${BASE_URL}/api/news`, { 
+    title, 
+    content, 
+    image_url: '',   
+    created_by: 1, 
+  });
+
     alert('Berita berhasil ditambahkan!');
     setTitle('');
     setContent('');

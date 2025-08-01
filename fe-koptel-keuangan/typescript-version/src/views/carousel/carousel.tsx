@@ -8,13 +8,19 @@ import {
   Box,
   Grid,
 } from '@mui/material';
-import axios from 'axios';
 import { useAuth } from 'src/hooks/useAuth';
+import axios from 'axios';
+import { BASE_URL } from 'src/networks/apiServices';
 
 interface NewsItem {
   id: number;
   title: string;
 }
+
+// ✅ Buat instance axios supaya BASE_URL otomatis dipakai
+const api = axios.create({
+  baseURL: BASE_URL,
+});
 
 export default function CarouselForm() {
   const { user } = useAuth();
@@ -29,13 +35,17 @@ export default function CarouselForm() {
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Fetch daftar berita untuk pilihan Linked News
   useEffect(() => {
-    axios
-      .get<NewsItem[]>('/api/news')
-      .then((res) => setNewsList(res.data))
-      .catch((err) => console.error(err));
+    api.get('/api/news')
+      .then((res) => {
+        console.log('Fetched news:', res.data);
+        setNewsList(res.data);
+      })
+      .catch((err) => console.error('Fetch news error:', err));
   }, []);
 
+  // ✅ Handle perubahan gambar
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -48,6 +58,7 @@ export default function CarouselForm() {
     }
   };
 
+  // ✅ Handle submit form
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!imageFile) {
@@ -58,16 +69,18 @@ export default function CarouselForm() {
     setLoading(true);
 
     try {
+      // 1️⃣ Upload file gambar
       const formData = new FormData();
       formData.append('file', imageFile);
 
-      const uploadRes = await axios.post('/api/upload', formData, {
+      const uploadRes = await api.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const imageUrl = uploadRes.data.url; 
+      const imageUrl = uploadRes.data.url;
 
-      await axios.post('/api/carousel', {
+      // 2️⃣ Simpan data carousel
+      await api.post('/api/carrousel', {   // ✅ PAKAI /api/carrousel (double R sesuai BE)
         title,
         description,
         image_url: imageUrl,
@@ -102,6 +115,7 @@ export default function CarouselForm() {
       </Typography>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        {/* Judul */}
         <TextField
           fullWidth
           label="Title"
@@ -111,6 +125,7 @@ export default function CarouselForm() {
           margin="normal"
         />
 
+        {/* Deskripsi */}
         <TextField
           fullWidth
           label="Description"
@@ -184,6 +199,7 @@ export default function CarouselForm() {
           ))}
         </TextField>
 
+        {/* Tombol Submit */}
         <Button
           type="submit"
           variant="contained"
