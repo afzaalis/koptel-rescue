@@ -17,7 +17,6 @@ interface NewsItem {
   title: string;
 }
 
-// ✅ Buat instance axios supaya BASE_URL otomatis dipakai
 const api = axios.create({
   baseURL: BASE_URL,
 });
@@ -58,7 +57,6 @@ export default function CarouselForm() {
     }
   };
 
-  // ✅ Handle submit form
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!imageFile) {
@@ -69,7 +67,6 @@ export default function CarouselForm() {
     setLoading(true);
 
     try {
-      // 1️⃣ Upload file gambar
       const formData = new FormData();
       formData.append('file', imageFile);
 
@@ -79,8 +76,7 @@ export default function CarouselForm() {
 
       const imageUrl = uploadRes.data.url;
 
-      // 2️⃣ Simpan data carousel
-      await api.post('/api/carrousel', {   // ✅ PAKAI /api/carrousel (double R sesuai BE)
+      await api.post('/api/carrousel', {  
         title,
         description,
         image_url: imageUrl,
