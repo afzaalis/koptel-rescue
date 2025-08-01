@@ -58,7 +58,6 @@ export default function CarouselForm() {
     setLoading(true);
 
     try {
-      // 1️⃣ Upload gambar ke backend
       const formData = new FormData();
       formData.append('file', imageFile);
 
@@ -66,9 +65,8 @@ export default function CarouselForm() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const imageUrl = uploadRes.data.url; // URL hasil upload
+      const imageUrl = uploadRes.data.url; 
 
-      // 2️⃣ Simpan data carousel
       await axios.post('/api/carousel', {
         title,
         description,
