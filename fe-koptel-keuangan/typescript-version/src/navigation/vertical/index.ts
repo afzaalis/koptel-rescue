@@ -77,9 +77,15 @@ const navigation = (): VerticalNavItemsType => {
       // openInNewTab: true
     },
     {
-      title: 'Input News & Events',
+      title: 'Input Carousel',
       icon: FileDocumentOutline,
       path: '/carousel',
+      // openInNewTab: true
+    },
+     {
+      title: 'Input News',
+      icon: FileDocumentOutline,
+      path: '/news',
       // openInNewTab: true
     },
 
