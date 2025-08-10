@@ -1,3 +1,5 @@
+// File: src/pages/collection/CollectionSales.tsx
+
 import { useState, useEffect } from 'react';
 
 // ** Next Imports
@@ -9,26 +11,26 @@ import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
-import LinearProgress from '@mui/material/LinearProgress'; 
+import LinearProgress from '@mui/material/LinearProgress';
 import { styled, useTheme } from '@mui/material/styles';
 
 // ** Icons Imports
-import CashMultiple from 'mdi-material-ui/CashMultiple'; 
+import CashMultiple from 'mdi-material-ui/CashMultiple';
 import AccountCash from 'mdi-material-ui/AccountCash';
-import Percent from 'mdi-material-ui/Percent'; 
+import Percent from 'mdi-material-ui/Percent';
 
-// ** Chart Imports - Dynamically import ReactApexChart
+// ** Chart Imports
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 // ** Axios for API calls
 import axios from 'axios';
 
-// ** Auth Config (untuk baseURL API)
+// ** Auth Config
 import authConfig from 'src/configs/auth';
 
 // Styled Box for Icon background
 const IconBox = styled(Box)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #FF6B6B 0%, #EE4266 100%)', 
+  background: 'linear-gradient(135deg, #FF6B6B 0%, #EE4266 100%)',
   borderRadius: '12px',
   padding: theme.spacing(1.5),
   display: 'flex',
@@ -40,7 +42,7 @@ const IconBox = styled(Box)(({ theme }) => ({
 interface CollectionSummary {
   totalCollectionThisYear: number;
   receivablesThisMonth: number;
-  crThisMonthPercentage: number; 
+  crThisMonthPercentage: number;
 }
 
 interface MonthlyReceivablesData {
@@ -53,11 +55,13 @@ interface MonthlySalesCollectionData {
   salesCollection: number;
 }
 
-const CollectionDashboard = () => {
+const CollectionSales = () => { // Renamed component
   const theme = useTheme();
-
+  // ... (the rest of your original code remains the same)
+  // ... (The useEffect, state, chart options, and JSX return are all the same)
+  // ...
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().toLocaleString('en-US', { month: 'long' }); 
+  const currentMonth = new Date().toLocaleString('en-US', { month: 'long' });
 
   // ** State untuk data
   const [summary, setSummary] = useState<CollectionSummary | null>(null);
@@ -84,17 +88,14 @@ const CollectionDashboard = () => {
         const baseUrl = authConfig.meEndpoint.split('/api/auth')[0];
 
         // --- Fetch Collection Summary ---
-        // Endpoint simulasi: GET http://localhost:5001/api/sales/collection-summary
         const summaryResponse = await axios.get(`${baseUrl}/api/sales/collection-summary`, { headers });
         setSummary(summaryResponse.data);
 
         // --- Fetch Monthly Receivables Data ---
-        // Endpoint simulasi: GET http://localhost:5001/api/sales/monthly-receivables
         const monthlyReceivablesResponse = await axios.get(`${baseUrl}/api/sales/monthly-receivables`, { headers });
         setMonthlyReceivablesChartData(monthlyReceivablesResponse.data);
 
         // --- Fetch Monthly Sales Collection Data ---
-        // Endpoint simulasi: GET http://localhost:5001/api/sales/monthly-sales-collection
         const monthlySalesCollectionResponse = await axios.get(`${baseUrl}/api/sales/monthly-sales-collection`, { headers });
         setMonthlySalesCollectionChartData(monthlySalesCollectionResponse.data);
 
@@ -102,8 +103,6 @@ const CollectionDashboard = () => {
         console.error('Error fetching collection data:', err);
         if (err.response && err.response.status === 401) {
           setError('Session expired or unauthorized. Please log in again.');
-          // Optionally, trigger logout here
-          // auth.logout();
         } else {
           setError('Failed to load collection data. Please try again.');
         }
@@ -162,7 +161,7 @@ const CollectionDashboard = () => {
         formatter: (val) => `IDR ${val.toLocaleString('id-ID')}`
       }
     },
-    colors: [theme.palette.info.main], 
+    colors: [theme.palette.info.main],
     grid: {
       borderColor: theme.palette.divider,
       xaxis: {
@@ -228,7 +227,7 @@ const CollectionDashboard = () => {
         formatter: (val) => `IDR ${val.toLocaleString('id-ID')}`
       }
     },
-    colors: [theme.palette.success.main], 
+    colors: [theme.palette.success.main],
     grid: {
       borderColor: theme.palette.divider,
       xaxis: {
@@ -368,4 +367,4 @@ const CollectionDashboard = () => {
   );
 };
 
-export default CollectionDashboard;
+export default CollectionSales;
