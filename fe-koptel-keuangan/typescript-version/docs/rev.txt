@@ -1,0 +1,20 @@
+//revenue
+
+-tambah target batang di sebelah realisasai.
+-tambah pie target sampai bulan ini-> dihitung dari awal jan sampai skrg
+-tambah pie target januari sampai skrg-> perbandingan realisaasi bulan jan sampai skrg.
+-tambah pie realisasis bulan ini sama target bulan ini.
+
+//revisi inputan
+
+-untuk inputan berarti buat produk itu kan ada 3 
+
+-collection -> inputan nya target hutang yg haharus ditagih
+-kategori collection-> ada input hutang dulu-> misal ada nama kopeg , deskripsi hutang,jumlah hutang, target berapa lama.
+ada target bayar hutang
+
+//km
+-0jadikan statis
+-inputan nya akan ada: realisasi , target, judul pendapatan usaha
+-grafik dia pake ref sperti punya sales(ada YoY , YtD)
+

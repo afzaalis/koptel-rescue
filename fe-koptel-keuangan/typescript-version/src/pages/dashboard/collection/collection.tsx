@@ -1,7 +1,7 @@
 import type { NextPage } from 'next';
 import { ReactNode } from 'react';
 import UserLayout from 'src/layouts/UserLayout';
-import CollectionDashboard from 'src/views/dashboard/Collection';
+import CollectionDashboard from 'src/views/dashboard/collection/Collection';
 
 type NextPageWithAuth = NextPage & {
   authGuard?: boolean;
