@@ -14,9 +14,10 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { styled, useTheme } from '@mui/material/styles';
 
 // ** Icons Imports
-import CurrencyUsd from 'mdi-material-ui/CurrencyUsd';
-import Target from 'mdi-material-ui/Target';
-import ChartLineVariant from 'mdi-material-ui/ChartLineVariant';
+// Import ikon Material UI dengan path yang benar
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import TimelineIcon from '@mui/icons-material/Timeline';
 
 // ** Chart Imports - Dynamically import ReactApexChart
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -46,8 +47,7 @@ interface RevenueSummary {
 
 interface MonthlyData {
   month: string;
-  realization: number; // Now storing actual realization value
-  // growthRate: number; // No longer needed for Y-axis, but can be kept for tooltip if desired
+  realization: number;
 }
 
 interface ProductData {
@@ -67,6 +67,10 @@ const RevenueDashboard = () => {
   const [summary, setSummary] = useState<RevenueSummary | null>(null);
   const [monthlyChartData, setMonthlyChartData] = useState<MonthlyData[]>([]);
   const [productChartData, setProductData] = useState<ProductData[]>([]);
+
+  // State baru untuk data pie chart YoY
+  const [yearlyYoYData, setYearlyYoYData] = useState({ currentYearRevenue: 0, previousYearRevenue: 0 });
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,25 +97,32 @@ const RevenueDashboard = () => {
 
         // --- Fetch Monthly Realization Data ---
         const monthlyResponse = await axios.get(`${baseUrl}/api/sales/monthly-realization`, { headers });
-        // No need to calculate growth rate here if Y-axis is nominal value
         setMonthlyChartData(monthlyResponse.data);
 
         // --- Fetch Product Comparison Data ---
         const productResponse = await axios.get(`${baseUrl}/api/sales/product-comparison`, { headers });
-        setProductData(productResponse.data);
+        const productData = productResponse.data;
+        setProductData(productData);
+
+        // --- Hitung total pendapatan tahun ini vs tahun sebelumnya dari data produk ---
+        const totalCurrentYearRevenue = productData.reduce((sum: number, item: ProductData) => sum + item.currentYearRevenue, 0);
+        const totalPreviousYearRevenue = productData.reduce((sum: number, item: ProductData) => sum + item.previousYearRevenue, 0);
+        setYearlyYoYData({
+          currentYearRevenue: totalCurrentYearRevenue,
+          previousYearRevenue: totalPreviousYearRevenue
+        });
 
       } catch (err: any) {
         console.error('Error fetching revenue data:', err);
         if (err.response && err.response.status === 401) {
           setError('Session expired or unauthorized. Please log in again.');
-          // Optionally, trigger logout here
-          // auth.logout();
         } else {
           setError('Failed to load revenue data. Please try again.');
         }
         setSummary(null);
         setMonthlyChartData([]);
         setProductData([]);
+        setYearlyYoYData({ currentYearRevenue: 0, previousYearRevenue: 0 });
       } finally {
         setLoading(false);
       }
@@ -151,10 +162,10 @@ const RevenueDashboard = () => {
     },
     yaxis: {
       title: {
-        text: 'Realisasi (IDR)' // Mengubah label sumbu Y
+        text: 'Realisasi (IDR)'
       },
       labels: {
-        formatter: (value) => `IDR ${value.toLocaleString('id-ID')}` // Formatting angka
+        formatter: (value) => `IDR ${value.toLocaleString('id-ID')}`
       }
     },
     fill: {
@@ -162,7 +173,7 @@ const RevenueDashboard = () => {
     },
     tooltip: {
       y: {
-        formatter: (val) => `IDR ${val.toLocaleString('id-ID')}` // Formatting tooltip
+        formatter: (val) => `IDR ${val.toLocaleString('id-ID')}`
       }
     },
     colors: [theme.palette.primary.main],
@@ -182,8 +193,8 @@ const RevenueDashboard = () => {
   };
 
   const monthlyChartSeries = [{
-    name: 'Realisasi', // Mengubah nama series
-    data: monthlyChartData.map(data => data.realization) // Menggunakan nilai realisasi
+    name: 'Realisasi',
+    data: monthlyChartData.map(data => data.realization)
   }];
 
   // Options for Tahun Ini vs Tahun Sebelumnya Chart (Product Comparison)
@@ -248,12 +259,91 @@ const RevenueDashboard = () => {
   };
 
   const productChartSeries = [{
-    name: `Tahun Ini (${currentYear})`, // Menampilkan tahun saat ini
+    name: `Tahun Ini (${currentYear})`,
     data: productChartData.map(data => data.currentYearRevenue)
   }, {
-    name: `Tahun Sebelumnya (${previousYear})`, // Menampilkan tahun sebelumnya
+    name: `Tahun Sebelumnya (${previousYear})`,
     data: productChartData.map(data => data.previousYearRevenue)
   }];
+
+
+  // --- NEW: Pie Chart Options & Series ---
+
+  // Options for YTD Pie Chart
+  const ytdPieChartOptions: ApexCharts.ApexOptions = {
+    chart: {
+      type: 'donut',
+    },
+    labels: ['Realisasi', 'Sisa Target'],
+    responsive: [{
+      breakpoint: 480,
+      options: {
+        chart: {
+          width: 200
+        },
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }],
+    legend: {
+      position: 'bottom'
+    },
+    colors: [theme.palette.success.main, theme.palette.warning.main], // Warna untuk Realisasi dan Sisa Target
+    tooltip: {
+      y: {
+        formatter: (val) => `IDR ${parseFloat(val.toString()).toLocaleString('id-ID')}`
+      }
+    },
+    dataLabels: {
+      formatter: (val, opts) => {
+        const total = opts.w.globals.series.reduce((a: number, b: number) => a + b, 0);
+        if (total === 0) return '0%';
+        const percentage = ((opts.w.globals.series[opts.seriesIndex] / total) * 100).toFixed(1);
+        return `${percentage}%`;
+      }
+    }
+  };
+
+  const ytdPieChartSeries = summary ? [summary.totalRevenue, Math.max(summary.totalTarget - summary.totalRevenue, 0)] : [0, 0];
+
+  // Options for YoY Pie Chart
+  const yoyPieChartOptions: ApexCharts.ApexOptions = {
+    chart: {
+      type: 'donut',
+    },
+    labels: [`Realisasi ${currentYear}`, `Realisasi ${previousYear}`],
+    responsive: [{
+      breakpoint: 480,
+      options: {
+        chart: {
+          width: 200
+        },
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }],
+    legend: {
+      position: 'bottom'
+    },
+    colors: [theme.palette.primary.main, theme.palette.secondary.main],
+    tooltip: {
+      y: {
+        formatter: (val) => `IDR ${parseFloat(val.toString()).toLocaleString('id-ID')}`
+      }
+    },
+    dataLabels: {
+      formatter: (val, opts) => {
+        const total = opts.w.globals.series.reduce((a: number, b: number) => a + b, 0);
+        if (total === 0) return '0%';
+        const percentage = ((opts.w.globals.series[opts.seriesIndex] / total) * 100).toFixed(1);
+        return `${percentage}%`;
+      }
+    }
+  };
+
+  const yoyPieChartSeries = [yearlyYoYData.currentYearRevenue, yearlyYoYData.previousYearRevenue];
 
 
   if (loading) {
@@ -280,7 +370,7 @@ const RevenueDashboard = () => {
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <IconBox>
-                <CurrencyUsd fontSize='large' />
+                <AttachMoneyIcon fontSize='large' />
               </IconBox>
               <Box sx={{ ml: 3 }}>
                 <Typography variant='h6' sx={{ fontWeight: 600 }}>
@@ -302,7 +392,7 @@ const RevenueDashboard = () => {
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <IconBox>
-                <Target fontSize='large' />
+                <TrackChangesIcon fontSize='large' />
               </IconBox>
               <Box sx={{ ml: 3 }}>
                 <Typography variant='h6' sx={{ fontWeight: 600 }}>
@@ -329,7 +419,7 @@ const RevenueDashboard = () => {
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <IconBox>
-                <ChartLineVariant fontSize='large' />
+                <TimelineIcon fontSize='large' />
               </IconBox>
               <Box sx={{ ml: 3 }}>
                 <Typography variant='h6' sx={{ fontWeight: 600 }}>
@@ -355,6 +445,29 @@ const RevenueDashboard = () => {
               Realisasi Target Chart (Nilai Realisasi Bulanan {currentYear})
             </Typography>
             {ReactApexChart && <ReactApexChart options={monthlyChartOptions} series={monthlyChartSeries} type='bar' height={350} />}
+          </CardContent>
+        </Card>
+      </Grid>
+
+      {/* --- NEW PIE CHARTS --- */}
+      <Grid item xs={12} md={6}>
+        <Card>
+          <CardContent>
+            <Typography variant='h6' sx={{ mb: 4 }}>
+              Pencapaian Target YTD ({currentYear})
+            </Typography>
+            {ReactApexChart && <ReactApexChart options={ytdPieChartOptions} series={ytdPieChartSeries} type='donut' height={350} />}
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} md={6}>
+        <Card>
+          <CardContent>
+            <Typography variant='h6' sx={{ mb: 4 }}>
+              Pendapatan Tahun Ini vs Tahun Sebelumnya (YoY)
+            </Typography>
+            {ReactApexChart && <ReactApexChart options={yoyPieChartOptions} series={yoyPieChartSeries} type='donut' height={350} />}
           </CardContent>
         </Card>
       </Grid>
