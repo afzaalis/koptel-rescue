@@ -1,35 +1,36 @@
 const pool = require('../db');
 
-const getMonthlyAchievementFromDbProduct = ({ id, name, target, realisasi }) => {
-    const achievement = target === 0 ? 0 : parseFloat(((realisasi / target) * 100).toFixed(2));
-    const remainingTarget = Math.max(target - realisasi, 0); 
-
-    return {
-        id,
-        name,
-        targetBulanIni: target,
-        realisasiBulanIni: realisasi,
-        pencapaian: `${achievement}%`,
-        isAchieved: realisasi >= target,
-        percentage: achievement, 
-        series: [realisasi, remainingTarget], 
-        labels: ['Realisasi', 'Sisa Target'], 
-    };
-};
-
-
+/**
+ * @description Mengambil data agregat penjualan dan target dari database.
+ * @param {number} year - Tahun yang akan diambil datanya.
+ * @returns {Promise<{dataByMonth: object[], productList: object[]}>}
+ */
 const getAggregatedSalesData = async (year) => {
     try {
-        const result = await pool.query(`
+        // Ambil data Realisasi dari tabel 'sales'
+        const realizationResult = await pool.query(`
             SELECT
                 EXTRACT(MONTH FROM tanggal)::int AS bulan,
-                produk,
-                jenis_data,
+                produk AS produk_name,
                 SUM(nominal)::float AS total
             FROM sales
-            WHERE EXTRACT(YEAR FROM tanggal)::int = $1 AND produk IS NOT NULL
-            GROUP BY bulan, produk, jenis_data
-            ORDER BY bulan
+            WHERE
+                EXTRACT(YEAR FROM tanggal)::int = $1
+                AND jenis_data = 'Realisasi'
+            GROUP BY bulan, produk_name
+        `, [year]);
+
+        // Ambil data Target dari tabel 'sales'
+        const targetResult = await pool.query(`
+            SELECT
+                EXTRACT(MONTH FROM tanggal)::int AS bulan,
+                produk AS produk_name,
+                SUM(nominal)::float AS total
+            FROM sales
+            WHERE
+                EXTRACT(YEAR FROM tanggal)::int = $1
+                AND jenis_data = 'Target'
+            GROUP BY bulan, produk_name
         `, [year]);
 
         const dataByMonth = Array(12).fill(null).map(() => ({
@@ -40,22 +41,22 @@ const getAggregatedSalesData = async (year) => {
 
         const productMap = {};
 
-        for (const row of result.rows) {
+        // Proses data realisasi
+        for (const row of realizationResult.rows) {
             const monthIdx = row.bulan - 1;
-            const nominal = row.total;
-            const produk = row.produk;
+            const produk = row.produk_name;
+            if (!productMap[produk]) productMap[produk] = Array(12).fill(null).map(() => ({ target: 0, realisasi: 0 }));
+            productMap[produk][monthIdx].realisasi = row.total;
+            dataByMonth[monthIdx].totalRealisasi += row.total;
+        }
 
-            if (!productMap[produk]) {
-                productMap[produk] = Array(12).fill(null).map(() => ({ target: 0, realisasi: 0 }));
-            }
-
-            if (row.jenis_data === 'Target') {
-                dataByMonth[monthIdx].totalTarget += nominal;
-                productMap[produk][monthIdx].target = nominal;
-            } else if (row.jenis_data === 'Realisasi') {
-                dataByMonth[monthIdx].totalRealisasi += nominal;
-                productMap[produk][monthIdx].realisasi = nominal;
-            }
+        // Proses data target
+        for (const row of targetResult.rows) {
+            const monthIdx = row.bulan - 1;
+            const produk = row.produk_name;
+            if (!productMap[produk]) productMap[produk] = Array(12).fill(null).map(() => ({ target: 0, realisasi: 0 }));
+            productMap[produk][monthIdx].target = row.total;
+            dataByMonth[monthIdx].totalTarget += row.total;
         }
 
         dataByMonth.forEach((monthData, monthIdx) => {
@@ -79,8 +80,25 @@ const getAggregatedSalesData = async (year) => {
         };
     } catch (error) {
         console.error('Error in getAggregatedSalesData:', error.message || error);
-        throw error; // Re-throw to be caught by calling function
+        throw error;
     }
+};
+
+const getMonthlyAchievementFromDbProduct = ({ id, name, target, realisasi }) => {
+    const achievement = target === 0 ? 0 : parseFloat(((realisasi / target) * 100).toFixed(2));
+    const remainingTarget = Math.max(target - realisasi, 0);
+
+    return {
+        id,
+        name,
+        targetBulanIni: target,
+        realisasiBulanIni: realisasi,
+        pencapaian: `${achievement}%`,
+        isAchieved: realisasi >= target,
+        percentage: achievement,
+        series: [realisasi, remainingTarget],
+        labels: ['Realisasi', 'Sisa Target'],
+    };
 };
 
 const calculateDashboardData = async () => {
@@ -224,6 +242,7 @@ exports.getRevenueSummary = async (req, res) => {
         );
         const totalRevenue = parseFloat(totalRevenueResult.rows[0]?.total_revenue || 0);
 
+        // Ambil data target dari tabel 'sales'
         const totalTargetResult = await pool.query(
             "SELECT COALESCE(SUM(nominal), 0) AS total_target FROM sales WHERE EXTRACT(YEAR FROM tanggal) = $1 AND jenis_data = 'Target'",
             [currentYear]
@@ -325,7 +344,7 @@ exports.getYearlyProductComparison = async (req, res) => {
 exports.getCollectionSummary = async (req, res) => {
     try {
         const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1; 
+        const currentMonth = new Date().getMonth() + 1; // Bulan saat ini (1-12)
 
         const totalCollectionThisYearResult = await pool.query(
             "SELECT COALESCE(SUM(nominal), 0) AS total_collection FROM sales WHERE EXTRACT(YEAR FROM tanggal) = $1 AND jenis_data = 'Realisasi'",
@@ -333,6 +352,7 @@ exports.getCollectionSummary = async (req, res) => {
         );
         const totalCollectionThisYear = parseFloat(totalCollectionThisYearResult.rows[0]?.total_collection || 0);
 
+        // Ambil piutang (target) dari tabel 'sales'
         const receivablesThisMonthResult = await pool.query(
             "SELECT COALESCE(SUM(nominal), 0) AS receivables FROM sales WHERE EXTRACT(YEAR FROM tanggal) = $1 AND EXTRACT(MONTH FROM tanggal) = $2 AND jenis_data = 'Target'",
             [currentYear, currentMonth]
@@ -370,6 +390,7 @@ exports.getCollectionSummary = async (req, res) => {
 exports.getMonthlyReceivables = async (req, res) => {
     try {
         const currentYear = new Date().getFullYear();
+        // Ambil piutang bulanan (target) dari tabel 'sales'
         const query = `
             SELECT
                 EXTRACT(MONTH FROM tanggal) AS month_num,
@@ -506,5 +527,85 @@ exports.getMonthlyExpensesComparison = async (req, res) => {
             console.error(error.stack);
         }
         res.status(500).json({ message: 'Internal server error fetching monthly expenses comparison.' });
+    }
+};
+
+const createMonthlyArray = () => Array(12).fill(0);
+
+// Endpoint baru untuk mengambil data Telco Super
+exports.getTelcoSuperData = async (req, res) => {
+    try {
+        const currentYear = new Date().getFullYear();
+        const previousYear = currentYear - 1;
+        const productName = 'Super';
+
+        // --- Ambil data target dari sales ---
+        const targetResult = await pool.query(`
+            SELECT
+                EXTRACT(MONTH FROM tanggal)::int AS month,
+                SUM(nominal) AS total_target
+            FROM sales
+            WHERE
+                EXTRACT(YEAR FROM tanggal) = $1 AND
+                produk = $2 AND
+                jenis_data = 'Target'
+            GROUP BY month
+            ORDER BY month ASC
+        `, [currentYear, productName]);
+
+        const targetData = createMonthlyArray();
+        targetResult.rows.forEach(row => {
+            if (row.month > 0 && row.month <= 12) {
+                targetData[row.month - 1] = parseFloat(row.total_target);
+            }
+        });
+
+        // --- Ambil data realisasi tahun ini dari sales ---
+        const realizationResult = await pool.query(`
+            SELECT
+                EXTRACT(MONTH FROM tanggal)::int AS month,
+                SUM(nominal) AS total_realisasi
+            FROM sales
+            WHERE
+                EXTRACT(YEAR FROM tanggal) = $1 AND
+                produk = $2 AND
+                jenis_data = 'Realisasi'
+            GROUP BY month
+            ORDER BY month ASC
+        `, [currentYear, productName]);
+
+        const realizationData = createMonthlyArray();
+        realizationResult.rows.forEach(row => {
+            realizationData[row.month - 1] = parseFloat(row.total_realisasi);
+        });
+
+        // --- Ambil data realisasi tahun lalu dari sales ---
+        const realizationPrevResult = await pool.query(`
+            SELECT
+                EXTRACT(MONTH FROM tanggal)::int AS month,
+                SUM(nominal) AS total_realisasi
+            FROM sales
+            WHERE
+                EXTRACT(YEAR FROM tanggal) = $1 AND
+                produk = $2 AND
+                jenis_data = 'Realisasi'
+            GROUP BY month
+            ORDER BY month ASC
+        `, [previousYear, productName]);
+
+        const realizationPrevData = createMonthlyArray();
+        realizationPrevResult.rows.forEach(row => {
+            realizationPrevData[row.month - 1] = parseFloat(row.total_realisasi);
+        });
+
+        res.status(200).json({
+            target: targetData,
+            realisasi: realizationData,
+            realisasiPrev: realizationPrevData,
+        });
+
+    } catch (error) {
+        console.error('Error in getTelcoSuperData:', error.message || error);
+        res.status(500).json({ message: 'Internal server error fetching Telco Super data.' });
     }
 };

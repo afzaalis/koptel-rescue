@@ -29,7 +29,7 @@ exports.getTelcoSuperData = async (req, res) => {
 
             if (row.jenis_data === 'Target') {
                 data.target[monthIdx] += nominal;
-            } else {
+            } else { // jenis_data = 'Realisasi'
                 if (row.tahun === yearNow) {
                     data.realisasi[monthIdx] += nominal;
                 } else {
@@ -45,7 +45,7 @@ exports.getTelcoSuperData = async (req, res) => {
     }
 };
 
-// Simpan data Target & Realisasi
+// Fungsi ini diperbaiki untuk menyimpan TARGET dan REALISASI ke tabel 'sales'
 exports.postTelcoSuperData = async (req, res) => {
     const { target, realisasi } = req.body;
 
@@ -54,27 +54,35 @@ exports.postTelcoSuperData = async (req, res) => {
     }
 
     const year = new Date().getFullYear();
+    const produkName = 'Super';
 
     try {
+        // Hapus data yang sudah ada untuk tahun ini sebelum insert baru
+        await pool.query(
+            `DELETE FROM sales WHERE produk = $1 AND EXTRACT(YEAR FROM tanggal)::int = $2`,
+            [produkName, year]
+        );
+
         for (let month = 1; month <= 12; month++) {
             const targetValue = parseFloat(target[month - 1]) || 0;
             const realisasiValue = parseFloat(realisasi[month - 1]) || 0;
-
             const tanggal = new Date(year, month - 1, 1);
 
+            // POST TARGET: Langsung masukkan ke tabel sales
             if (targetValue > 0) {
                 await pool.query(
                     `INSERT INTO sales (tanggal, produk, jenis_data, nominal, nama_pemasukan, nama_penginput)
-                     VALUES ($1, 'Super', 'Target', $2, 'Telco Super Target', 'admin')`,
-                    [tanggal, targetValue]
+                     VALUES ($1, $2, 'Target', $3, 'Telco Super Target', 'admin')`,
+                    [tanggal, produkName, targetValue]
                 );
             }
-
+            
+            // POST REALISASI: Langsung masukkan ke tabel sales
             if (realisasiValue > 0) {
                 await pool.query(
                     `INSERT INTO sales (tanggal, produk, jenis_data, nominal, nama_pemasukan, nama_penginput)
-                     VALUES ($1, 'Super', 'Realisasi', $2, 'Telco Super Realisasi', 'admin')`,
-                    [tanggal, realisasiValue]
+                     VALUES ($1, $2, 'Realisasi', $3, 'Telco Super Realisasi', 'admin')`,
+                    [tanggal, produkName, realisasiValue]
                 );
             }
         }
@@ -86,7 +94,7 @@ exports.postTelcoSuperData = async (req, res) => {
     }
 };
 
-
+// Fungsi ini diperbaiki untuk mengupdate TARGET dan REALISASI ke tabel 'sales'
 exports.putTelcoSuperData = async (req, res) => {
     const { target, realisasi } = req.body;
 
@@ -95,32 +103,35 @@ exports.putTelcoSuperData = async (req, res) => {
     }
 
     const year = new Date().getFullYear();
-
+    const produkName = 'Super';
+    
     try {
+        // Hapus data yang sudah ada untuk tahun ini sebelum update
+        await pool.query(
+            `DELETE FROM sales WHERE produk = $1 AND EXTRACT(YEAR FROM tanggal)::int = $2`,
+            [produkName, year]
+        );
+
         for (let month = 1; month <= 12; month++) {
             const targetValue = parseFloat(target[month - 1]) || 0;
             const realisasiValue = parseFloat(realisasi[month - 1]) || 0;
             const tanggal = new Date(year, month - 1, 1);
-
-            // Delete existing data for that month + produk Super
-            await pool.query(
-                `DELETE FROM sales WHERE tanggal = $1 AND produk = 'Super' AND jenis_data IN ('Target', 'Realisasi')`,
-                [tanggal]
-            );
-
+            
+            // PUT TARGET: Masukkan kembali data target yang baru
             if (targetValue > 0) {
                 await pool.query(
                     `INSERT INTO sales (tanggal, produk, jenis_data, nominal, nama_pemasukan, nama_penginput)
-                     VALUES ($1, 'Super', 'Target', $2, 'Telco Super Target', 'admin')`,
-                    [tanggal, targetValue]
+                     VALUES ($1, $2, 'Target', $3, 'Telco Super Target', 'admin')`,
+                    [tanggal, produkName, targetValue]
                 );
             }
 
+            // PUT REALISASI: Masukkan kembali data realisasi yang baru
             if (realisasiValue > 0) {
                 await pool.query(
                     `INSERT INTO sales (tanggal, produk, jenis_data, nominal, nama_pemasukan, nama_penginput)
-                     VALUES ($1, 'Super', 'Realisasi', $2, 'Telco Super Realisasi', 'admin')`,
-                    [tanggal, realisasiValue]
+                     VALUES ($1, $2, 'Realisasi', $3, 'Telco Super Realisasi', 'admin')`,
+                    [tanggal, produkName, realisasiValue]
                 );
             }
         }
@@ -131,3 +142,4 @@ exports.putTelcoSuperData = async (req, res) => {
         res.status(500).json({ error: "Failed to update data" });
     }
 };
+

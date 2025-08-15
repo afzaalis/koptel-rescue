@@ -1,8 +1,9 @@
 const pool = require('../db');
+const { syncBudgetTargetsToSales } = require('../utils/syncBudgetTargetsToSales');
 
 const getMonthlyAchievementFromDbProduct = ({ id, name, target, realisasi }) => {
     const achievement = target === 0 ? 0 : parseFloat(((realisasi / target) * 100).toFixed(2));
-    const remainingTarget = Math.max(target - realisasi, 0); 
+    const remainingTarget = Math.max(target - realisasi, 0);
 
     return {
         id,
@@ -11,9 +12,9 @@ const getMonthlyAchievementFromDbProduct = ({ id, name, target, realisasi }) => 
         realisasiBulanIni: realisasi,
         pencapaian: `${achievement}%`,
         isAchieved: realisasi >= target,
-        percentage: achievement, 
+        percentage: achievement,
         series: [realisasi, remainingTarget],
-        labels: ['Realisasi', 'Sisa Target'], 
+        labels: ['Realisasi', 'Sisa Target'],
     };
 };
 
@@ -105,6 +106,19 @@ const calculateDashboardData = async () => {
         nominalRealisasiBulanan: currentMonth.totalRealisasi.toLocaleString()
     };
 
+    const ytdTarget = salesDataByMonth.reduce((sum, item) => sum + item.totalTarget, 0);
+    const ytdRealisasi = salesDataByMonth.reduce((sum, item) => sum + item.totalRealisasi, 0);
+
+    const ytdPerformance = {
+        totalTarget: ytdTarget,
+        totalRealisasi: ytdRealisasi,
+        pieTargetYTDSeries: [ytdRealisasi, Math.max(ytdTarget - ytdRealisasi, 0)],
+        pieTargetYTDLabels: ['Realisasi', 'Sisa Target'],
+        realisasiYTDPercentage: ytdTarget === 0 ? 0 : parseFloat(((ytdRealisasi / ytdTarget) * 100).toFixed(2)),
+        productDistributionYTDSeries: productList.map(p => p.targetTahunanFull),
+        productDistributionYTDLabels: productList.map(p => p.name)
+    };
+
     const currentMonthPerformance = {
         totalTarget: currentMonth.totalTarget,
         totalRealisasi: currentMonth.totalRealisasi,
@@ -125,18 +139,6 @@ const calculateDashboardData = async () => {
         })
     };
 
-    const ytdTarget = salesDataByMonth.reduce((sum, item) => sum + item.totalTarget, 0);
-    const ytdRealisasi = salesDataByMonth.reduce((sum, item) => sum + item.totalRealisasi, 0);
-
-    const ytdPerformance = {
-        totalTarget: ytdTarget,
-        totalRealisasi: ytdRealisasi,
-        pieTargetYTDSeries: [ytdRealisasi, Math.max(ytdTarget - ytdRealisasi, 0)],
-        pieTargetYTDLabels: ['Realisasi', 'Sisa Target'],
-        realisasiYTDPercentage: ytdTarget === 0 ? 0 : parseFloat(((ytdRealisasi / ytdTarget) * 100).toFixed(2)),
-        productDistributionYTDSeries: productList.map(p => p.targetTahunanFull),
-        productDistributionYTDLabels: productList.map(p => p.name)
-    };
 
     const projectionCategories = Array.from({ length: 12 }, (_, i) =>
         new Date(currentYear, i).toLocaleString('default', { month: 'short' })
@@ -392,8 +394,6 @@ exports.deleteProductContribution = async (req, res) => {
         res.status(500).json({ message: 'Internal server error deleting product contribution.' });
     }
 };
-
-// --- Budget Targets ---
 exports.createBudgetTarget = async (req, res) => {
     const { budget_code_id, month, year, target_amount } = req.body;
     if (req.user.role.toLowerCase() !== 'keuangan' && req.user.role.toLowerCase() !== 'admin') {
@@ -401,20 +401,33 @@ exports.createBudgetTarget = async (req, res) => {
     }
 
     try {
-        // Verifikasi bahwa budget_code_id adalah tipe 'REVENUE' atau 'EXPENSE'
-        const budgetCodeResult = await pool.query('SELECT type FROM budget_codes WHERE id = $1', [budget_code_id]);
-        if (budgetCodeResult.rows.length === 0 || !['REVENUE', 'EXPENSE'].includes(budgetCodeResult.rows[0].type)) {
-            return res.status(400).json({ message: 'Budget code ID tidak valid atau bukan tipe REVENUE/EXPENSE.' });
+        const budgetCodeResult = await pool.query('SELECT name FROM budget_codes WHERE id = $1', [budget_code_id]);
+        if (budgetCodeResult.rows.length === 0) {
+            return res.status(400).json({ message: 'Budget code ID tidak valid.' });
         }
+        const produkName = budgetCodeResult.rows[0].name;
 
+        // Gunakan INSERT ... ON CONFLICT DO UPDATE untuk mencegah duplikasi
         const result = await pool.query(
-            'INSERT INTO budget_targets (budget_code_id, month, year, target_amount) VALUES ($1, $2, $3, $4) RETURNING *',
+            `INSERT INTO budget_targets (budget_code_id, month, year, target_amount)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (budget_code_id, month, year)
+             DO UPDATE SET target_amount = EXCLUDED.target_amount, updated_at = CURRENT_TIMESTAMP
+             RETURNING *`,
             [budget_code_id, month, year, target_amount]
         );
-        res.status(200).json({ message: 'Budget target added successfully', target: result.rows[0] });
+        
+        const tanggal = new Date(year, month - 1, 1);
+        
+        // Pastikan namaPenginput selalu memiliki nilai, berikan default 'Sistem' jika tidak ada
+        const namaPenginput = req.user?.name ?? 'Sistem';
+
+        await syncBudgetTargetsToSales(budget_code_id, produkName, target_amount, tanggal, namaPenginput);
+
+        res.status(200).json({ message: 'Budget target berhasil disimpan dan disinkronkan ke sales', target: result.rows[0] });
     } catch (error) {
-        console.error('Error creating budget target:', error);
-        res.status(500).json({ message: 'Internal server error creating budget target.' });
+        console.error('Error creating/updating budget target:', error);
+        res.status(500).json({ message: 'Internal server error creating/updating budget target.' });
     }
 };
 
@@ -446,20 +459,16 @@ exports.getBudgetTargets = async (req, res) => {
 
 exports.updateBudgetTarget = async (req, res) => {
     const { id } = req.params;
-    const { month, year, target_amount } = req.body;
-    if (req.user.role.toLowerCase() !== 'keuangan' && req.user.role.toLowerCase() !== 'admin') {
-        return res.status(403).json({ message: 'Hanya role Keuangan atau Admin yang dapat memperbarui target anggaran.' });
-    }
-
+    
     try {
-        const result = await pool.query(
-            'UPDATE budget_targets SET month = $1, year = $2, target_amount = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
-            [month, year, target_amount, id]
-        );
-        if (result.rows.length === 0) {
+        const targetResult = await pool.query('SELECT budget_code_id FROM budget_targets WHERE id = $1', [id]);
+        if (targetResult.rows.length === 0) {
             return res.status(404).json({ message: 'Budget target not found.' });
         }
-        res.status(200).json({ message: 'Budget target updated successfully', target: result.rows[0] });
+        req.body.budget_code_id = targetResult.rows[0].budget_code_id;
+        
+        return exports.createBudgetTarget(req, res);
+
     } catch (error) {
         console.error('Error updating budget target:', error);
         res.status(500).json({ message: 'Internal server error updating budget target.' });
@@ -473,11 +482,24 @@ exports.deleteBudgetTarget = async (req, res) => {
     }
 
     try {
+        const targetResult = await pool.query('SELECT * FROM budget_targets WHERE id = $1', [id]);
+        if (targetResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Budget target not found.' });
+        }
+        const { budget_code_id, month, year } = targetResult.rows[0];
+
         const result = await pool.query('DELETE FROM budget_targets WHERE id = $1 RETURNING *', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Budget target not found.' });
         }
-        res.status(200).json({ message: 'Budget target deleted successfully' });
+        
+        const tanggal = new Date(year, month - 1, 1);
+        await pool.query(
+            `DELETE FROM sales WHERE budget_code_id = $1 AND EXTRACT(MONTH FROM tanggal) = $2 AND EXTRACT(YEAR FROM tanggal) = $3 AND jenis_data = 'Target'`,
+            [budget_code_id, month, year]
+        );
+
+        res.status(200).json({ message: 'Budget target deleted successfully and synchronized to sales' });
     } catch (error) {
         console.error('Error deleting budget target:', error);
         res.status(500).json({ message: 'Internal server error deleting budget target.' });
@@ -491,7 +513,6 @@ exports.createRealization = async (req, res) => {
     }
 
     try {
-        // Validasi jenis_data
         if (!['Realisasi', 'Expenses'].includes(jenis_data)) {
             return res.status(400).json({ message: 'Jenis data tidak valid untuk realisasi. Harus "Realisasi" atau "Expenses".' });
         }
