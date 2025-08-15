@@ -45,7 +45,7 @@ exports.getTelcoSuperData = async (req, res) => {
     }
 };
 
-// Fungsi ini diperbaiki untuk menyimpan TARGET dan REALISASI ke tabel 'sales'
+// untuk menyimpan TARGET dan REALISASI ke tabel 'sales'
 exports.postTelcoSuperData = async (req, res) => {
     const { target, realisasi } = req.body;
 
@@ -126,7 +126,7 @@ exports.putTelcoSuperData = async (req, res) => {
                 );
             }
 
-            // PUT REALISASI: Masukkan kembali data realisasi yang baru
+            // memasukan kembali data realisasi yang baru
             if (realisasiValue > 0) {
                 await pool.query(
                     `INSERT INTO sales (tanggal, produk, jenis_data, nominal, nama_pemasukan, nama_penginput)

@@ -1,0 +1,6 @@
+cara run be
+
+1.npm install
+2.buat .env
+3.sesuain env
+4.npm start

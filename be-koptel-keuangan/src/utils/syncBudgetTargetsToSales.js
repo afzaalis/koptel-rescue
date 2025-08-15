@@ -4,13 +4,11 @@ const syncBudgetTargetsToSales = async (budgetCodeId, produkName, targetAmount, 
     try {
         console.log(`Menyinkronkan data target untuk produk ${produkName} dengan budget code ID ${budgetCodeId}...`);
         
-        // Hapus data target yang sudah ada di tabel sales untuk bulan dan tahun ini
         await pool.query(
             `DELETE FROM sales WHERE budget_code_id = $1 AND EXTRACT(MONTH FROM tanggal) = EXTRACT(MONTH FROM $2::DATE) AND EXTRACT(YEAR FROM tanggal) = EXTRACT(YEAR FROM $2::DATE) AND jenis_data = 'Target'`,
             [budgetCodeId, tanggal]
         );
 
-        // Jika targetAmount > 0, sisipkan data target baru ke tabel sales
         if (targetAmount > 0) {
             await pool.query(
                 `INSERT INTO sales (tanggal, nominal, jenis_data, produk, nama_pemasukan, budget_code_id, nama_penginput)

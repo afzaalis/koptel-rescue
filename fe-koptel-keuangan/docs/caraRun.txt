@@ -1,0 +1,6 @@
+cara running proyek
+
+1.git clone proyek
+2.npm install (klo ada yg tidak kompatibel pake: npm install --legacy-peer-deps)
+3.sesuain env
+4.npm run dev
