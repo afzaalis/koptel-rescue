@@ -1,4 +1,4 @@
-gaperlu pake CD, gada vps T_T
+CD nya yg di private repo be keuangan
 
 # arsitektur design backend:
 
