@@ -1,0 +1,3 @@
+Bug % Err:
+
+1. penamaan tdk hrs diawali kapital, jika tidak maka tidak bisa create realization
