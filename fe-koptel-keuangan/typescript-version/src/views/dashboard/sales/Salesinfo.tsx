@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import axios from "axios";
 import { ApexOptions } from "apexcharts";
 import { Select, MenuItem, FormControl, InputLabel, Box } from "@mui/material";
+import { BASE_URL } from "src/networks/apiServices";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -20,7 +21,7 @@ interface TelcoSuperResponse {
   realisasiPrev: number[];
 }
 
-// Utilitas formatter angka (Indonesia)
+// Utilitas formatter angka rupiah
 const formatAngkaID = (num: number): string => {
   return num.toLocaleString("id-ID");
 };
@@ -32,64 +33,64 @@ const Salesinfo = () => {
   const [pieMode, setPieMode] = useState("TOTAL");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
   const currentMonth = new Date().getMonth();
-const chartOptions: ApexOptions = {
-  chart: { id: "sales-chart" },
-  xaxis: {
-    categories: months,
-    labels: { style: { colors: "#222" } }
-  },
-  yaxis: {
-    labels: {
-      style: { colors: "#222" },
-      formatter: (val: number) => formatAngkaID(val)
-    }
-  },
-  dataLabels: {
-    enabled: true,
-    style: { colors: ["#222"] },
-    offsetY: chartType === "bar" ? -10 : -2,
-    dropShadow: {
-      enabled: true,
-      top: 1,
-      left: 1,
-      blur: 2,
-      color: "#fff",
-      opacity: 0.9
-    },
-    formatter: function (val: number, opts: any) {
-      if (chartType !== "bar") return formatAngkaID(val);
-      const seriesIndex = opts.seriesIndex;
-      const dataPointIndex = opts.dataPointIndex;
-      const allSeries = opts.w.globals.series;
-      if (
-        allSeries.length > 1 &&
-        allSeries[0][dataPointIndex] === allSeries[1][dataPointIndex] &&
-        seriesIndex > 0
-      ) {
-        return "";
-      }
-      return formatAngkaID(val);
-    }
-  },
-  tooltip: {
-    y: {
-      formatter: (val: number) => formatAngkaID(val)
-    }
-  },
-  plotOptions: {
-    bar: {
-      dataLabels: { position: "center" }
-    }
-  },
-  stroke: {
-    curve: "smooth",
-    width: chartType === "line" ? 3 : 1
-  },
-  legend: {
-    labels: { colors: "#222" }
-  }
-};
 
+  const chartOptions: ApexOptions = {
+    chart: { id: "sales-chart" },
+    xaxis: {
+      categories: months,
+      labels: { style: { colors: "#222" } }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: "#222" },
+        formatter: (val: number) => formatAngkaID(val)
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      style: { colors: ["#222"] },
+      offsetY: chartType === "bar" ? -10 : -2,
+      dropShadow: {
+        enabled: true,
+        top: 1,
+        left: 1,
+        blur: 2,
+        color: "#fff",
+        opacity: 0.9
+      },
+      formatter: function (val: number, opts: any) {
+        if (chartType !== "bar") return formatAngkaID(val);
+        const seriesIndex = opts.seriesIndex;
+        const dataPointIndex = opts.dataPointIndex;
+        const allSeries = opts.w.globals.series;
+        if (
+          allSeries.length > 1 &&
+          allSeries[0][dataPointIndex] === allSeries[1][dataPointIndex] &&
+          seriesIndex > 0
+        ) {
+          return "";
+        }
+        return formatAngkaID(val);
+      }
+    },
+    tooltip: {
+      y: {
+        formatter: (val: number) => formatAngkaID(val)
+      }
+    },
+    plotOptions: {
+      bar: {
+        dataLabels: { position: "center" }
+      }
+    },
+    stroke: {
+      curve: "smooth",
+      width: chartType === "line" ? 3 : 1
+    },
+    legend: {
+      labels: { colors: "#222" }
+    }
+  };
 
   const chartSeries = [
     { name: "Target", data: target.map(val => Number(val) || 0) },
@@ -160,7 +161,7 @@ const chartOptions: ApexOptions = {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/sales/telco-super");
+        const res = await fetch(`${BASE_URL}/api/sales/telco-super`);
         const data: TelcoSuperResponse = await res.json();
         if (Array.isArray(data.target) && Array.isArray(data.realisasi) && Array.isArray(data.realisasiPrev)) {
           setTarget(data.target.map(val => val.toString()));
@@ -175,21 +176,7 @@ const chartOptions: ApexOptions = {
     fetchData();
   }, []);
 
-  const handleSubmit = () => {
-    axios
-      .put("http://localhost:5001/api/sales/telco-super", {
-        target,
-        realisasi,
-        realisasiPrev
-      })
-      .then(() => {
-        alert("Data berhasil disimpan!");
-      })
-      .catch((err) => {
-        console.error("Gagal menyimpan data:", err);
-        alert("Gagal menyimpan data");
-      });
-  };
+ 
 
   return (
     <Grid container spacing={4}>

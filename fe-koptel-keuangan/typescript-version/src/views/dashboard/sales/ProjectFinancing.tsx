@@ -3,6 +3,7 @@ import Grid from "@mui/material/Grid";
 import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
 import { Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { BASE_URL } from "src/networks/apiServices";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -27,7 +28,8 @@ const ProjectFinancing = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/sales/realisasiFinancing");
+        // Menggunakan BASE_URL untuk URL API
+        const res = await fetch(`${BASE_URL}/api/sales/realisasiFinancing`);
         const data: TelcoSuperResponse = await res.json();
 
         if (Array.isArray(data.target) && Array.isArray(data.realisasi) && Array.isArray(data.realisasiPrev)) {

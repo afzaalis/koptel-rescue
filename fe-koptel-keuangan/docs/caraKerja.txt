@@ -1,0 +1,16 @@
+cara kerja sistem
+
+-sales:
+dia menampilkan YOY,YTD dan realisasi,target total dari produk(Telco Super,Project Financing,Project Executing)
+-revenue & equity:
+dia menampilkan total pendapatan dari produk,total target dan Realisasi Target Chart (Nilai Realisasi Bulanan tahun ini)
+-collection:
+dia menampikan collection kopeg(untuk monitoring hutang pinjaman kopeg) dan collection sales yg diambil dari dashboard sales produk
+-utility & expense:
+dia menampilkan jumlah pengeluaran keuangan. menampilkan Expenses YTD dan Expenses CM
+-KM:
+menampilkan KINERJA KEUANGAN dalam bentuk table (untuk POST dan PUT) dan grafik(YTD,YOY)
+-AI Helper:
+ai assistant web untuk guide user.
+
+-input data (khusus admin)
