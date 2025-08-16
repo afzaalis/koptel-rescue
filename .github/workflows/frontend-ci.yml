@@ -1,35 +1,35 @@
-name: Frontend CI
+# name: Frontend CI
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - main
+#   workflow_dispatch:
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: fe-koptel-keuangan/typescript-version
+#     defaults:
+#       run:
+#         working-directory: fe-koptel-keuangan/typescript-version
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'npm'
-          cache-dependency-path: fe-koptel-keuangan/typescript-version/package-lock.json
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: 18
+#           cache: 'npm'
+#           cache-dependency-path: fe-koptel-keuangan/typescript-version/package-lock.json
           
-      - name: Install dependencies
-        run: npm install
+#       - name: Install dependencies
+#         run: npm install
 
-      - name: Run tests (if available)
-        run: npm test --if-present
+#       - name: Run tests (if available)
+#         run: npm test --if-present
 
-      - name: Build project
-        run: npm run build -- --no-lint
+#       - name: Build project
+#         run: npm run build -- --no-lint
