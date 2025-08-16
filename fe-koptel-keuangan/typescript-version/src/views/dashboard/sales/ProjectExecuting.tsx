@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
 import { Select, MenuItem, FormControl, InputLabel, Box } from "@mui/material";
 import { formatRupiah } from "../utils";
+import { BASE_URL } from "src/networks/apiServices"; 
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -28,7 +29,8 @@ const ProjectExecuting = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/sales/project-executing");
+        // Use BASE_URL to construct the full API endpoint URL
+        const res = await fetch(`${BASE_URL}/sales/project-executing`);
         const data: ProjectExecutingResponse = await res.json();
         if (data?.target && data?.realisasi && data?.realisasiPrev) {
           setTarget(data.target.map(val => val.toString()));
