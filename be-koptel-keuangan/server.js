@@ -6,13 +6,13 @@ const app = require('./src/app');
 const pool = require('./src/db'); 
 const salesController = require('./src/controllers/salesController'); 
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: process.env.BASE_URL || 'http://localhost:3000', 
+        origin: process.env.BASE_URL || 'http://10.64.210.66:3000', 
         credentials: true,
         allowedHeaders: ["Content-Type", "Authorization"],
         methods: ["GET", "POST", "PUT", "DELETE"] 
